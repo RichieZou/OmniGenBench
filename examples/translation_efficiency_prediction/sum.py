@@ -1,8 +1,5 @@
 # Step 1: Data gathering
 
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = '1'
-
 from omnigenbench import (
     ClassificationMetric,#提供常见分类评估指标
     AccelerateTrainer,
@@ -12,7 +9,7 @@ from omnigenbench import (
     OmniModelForSequenceClassification,
 )
 
-model_name_or_path = "yangheng/OmniGenome-52M" #来自huggingface的模型
+model_name_or_path = "yangheng/OmniGenome-186M" #来自huggingface的模型
 dataset_name = "translation_efficiency_prediction"
 
 
@@ -22,13 +19,33 @@ label2id = {"0": 0, "1": 1}  # 0: Low TE, 1: High TE
 # Initialize tokenizer
 tokenizer = OmniTokenizer.from_pretrained(model_name_or_path)
 
-
+# ---------------------------------------------
 #将输入序列转换为张量字典传入模型。
-datasets = OmniDatasetForSequenceClassification.from_hub(
+# Method 1: From Hugging Face Hub (automatic download)
+datasets = OmniDatasetForSequenceClassification.from_huggingface(
     dataset_name="translation_efficiency_prediction",
     tokenizer=tokenizer,
     max_length=512,
+    label2id=label2id,
 )
+
+# # Method 2: From local directory (JSONL files)
+# datasets = OmniDatasetForSequenceClassification(
+#     "/home/yz1033/OmniGenBench/examples/translation_efficiency_prediction/__OMNIGENOME_DATA__/datasets/translation_efficiency_prediction",
+#     tokenizer=tokenizer,
+#     max_length=512,
+#     label2id=label2id,
+# )
+# # Method 3: From CSV file
+# datasets = OmniDatasetForSequenceClassification(
+#     "/home/yz1033/OmniGenBench/examples/translation_efficiency_prediction/__OMNIGENOME_DATA__/datasets/translation_efficiency_prediction",
+#     tokenizer=tokenizer,
+#     sequence_column="sequence",
+#     label_column="label",
+#     max_length=512,
+#     label2id=label2id,
+# )
+# ---------------------------------------------
 
 
 #打印数据格式
@@ -54,7 +71,6 @@ trainer = AccelerateTrainer(
     eval_dataset=datasets["valid"],
     test_dataset=datasets["test"],
     compute_metrics=metric_functions,
-    epochs=10,
 )
 print("🎓 Starting training...")
 
