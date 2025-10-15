@@ -281,37 +281,37 @@ tissue_names = [
     'Prophase-I-pollen', 'Tricellular-pollen', 'flag', 'grain'
 ]
 
-with torch.no_grad():
-    for row in sample_sequences:
-        sequence = row["sequence"]
-        print(f"\n{'='*60}")
-        print(f"🧬 Sample ID: {row['ID']}")
-        print(f"📏 Sequence length: {len(sequence)} bp")
+# with torch.no_grad():
+#     for row in sample_sequences:
+#         sequence = row["sequence"]
+#         print(f"\n{'='*60}")
+#         print(f"🧬 Sample ID: {row['ID']}")
+#         print(f"📏 Sequence length: {len(sequence)} bp")
 
-        outputs = inference_model.inference(sequence)
-        predictions = outputs['predictions'].cpu().numpy()
-        probabilities = outputs['probabilities'].cpu().numpy()
-        confidence = outputs['confidence'].cpu().numpy()
+#         outputs = inference_model.inference(sequence)
+#         predictions = outputs['predictions'].cpu().numpy()
+#         probabilities = outputs['probabilities'].cpu().numpy()
+#         confidence = outputs['confidence'].cpu().numpy()
 
-        print(f"\n📊 Predictions for 9 tissues:")
-        for i, tissue in enumerate(tissue_names):
-            pred_class = predictions[i]
-            pred_label = label_names[pred_class]
-            conf = confidence[i]
-            probs = probabilities[i]
+#         print(f"\n📊 Predictions for 9 tissues:")
+#         for i, tissue in enumerate(tissue_names):
+#             pred_class = predictions[i]
+#             pred_label = label_names[pred_class]
+#             conf = confidence[i]
+#             probs = probabilities[i]
 
-            # Get ground truth if available
-            gt_col = f"{tissue.replace('-', '_')}_TE_label"
-            if gt_col in row:
-                gt_label = row[gt_col]
-                if isinstance(gt_label, float) and math.isnan(gt_label):
-                    continue
-                match_emoji = "✅" if pred_label == gt_label else "❌"
-                print(f"  {match_emoji} {tissue:25s}: {pred_label:6s} (conf: {conf:.3f}) [GT: {gt_label}]")
-            else:
-                print(f"  🔹 {tissue:25s}: {pred_label:6s} (conf: {conf:.3f})")
+#             # Get ground truth if available
+#             gt_col = f"{tissue.replace('-', '_')}_TE_label"
+#             if gt_col in row:
+#                 gt_label = row[gt_col]
+#                 if isinstance(gt_label, float) and math.isnan(gt_label):
+#                     continue
+#                 match_emoji = "✅" if pred_label == gt_label else "❌"
+#                 print(f"  {match_emoji} {tissue:25s}: {pred_label:6s} (conf: {conf:.3f}) [GT: {gt_label}]")
+#             else:
+#                 print(f"  🔹 {tissue:25s}: {pred_label:6s} (conf: {conf:.3f})")
 
-            # Show probability distribution
-            print(f"      Probs - Low: {probs[0]:.3f}, Medium: {probs[1]:.3f}, High: {probs[2]:.3f}")
+#             # Show probability distribution
+#             print(f"      Probs - Low: {probs[0]:.3f}, Medium: {probs[1]:.3f}, High: {probs[2]:.3f}")
 
-print("\n🎉 All tasks completed!")
+# print("\n🎉 All tasks completed!")

@@ -8,7 +8,7 @@
   "model_name": "OmniModelForTriClassTESequenceClassification",
   "loss_fn_class": "CrossEntropyLoss",
   "loss_fn_module": "torch.nn.modules.loss",
-  "model_module": "custom_model",
+  "model_module": "__main__",
   "custom_attrs": {
     "num_labels": 9,
     "num_classes": 3,
