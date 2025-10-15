@@ -21,10 +21,10 @@ from omnigenbench import (
     OmniPooling,
 )
 
-# model_name_or_path = "yangheng/OmniGenome-52M"
+model_name_or_path = "yangheng/OmniGenome-52M"
 # model_name_or_path = "yangheng/OmniGenome-v1.5"
 # model_name_or_path = "SpliceBERT-510nt"
-model_name_or_path = "InstaDeepAI/nucleotide-transformer-v2-100m-multi-species"
+# model_name_or_path = "InstaDeepAI/nucleotide-transformer-v2-100m-multi-species"
 
 # Load tokenizer
 tokenizer = OmniTokenizer.from_pretrained(model_name_or_path, trust_remote_code=True)
@@ -187,7 +187,7 @@ class OmniModelForTriClassTESequenceClassification(OmniModelForMultiLabelSequenc
 # Load datasets
 print("📊 Loading datasets...")
 datasets = TriClassTEDataset.from_hub(
-    dataset_name="./",
+    "./",
     tokenizer=tokenizer,
     max_length=512,
     force_padding=False
@@ -217,7 +217,7 @@ metric_functions = [
 # Initialize trainer
 trainer = AccelerateTrainer(
     model=model,
-    epochs=50,
+    epochs=10,
     learning_rate=2e-5,
     batch_size=16,
     train_dataset=datasets["train"],
@@ -226,14 +226,14 @@ trainer = AccelerateTrainer(
     compute_metrics=metric_functions,
     gradient_accumulation_steps=4,
 )
-# trainer.save_model(path_to_save="ogb_te_3class_finetuned", dataset_class=TriClassTEDataset)
+trainer.save_model(path_to_save="ogb_te_3class_finetuned", dataset_class=TriClassTEDataset)
 metrics = trainer.train(path_to_save="ogb_te_3class_finetuned", dataset_class=TriClassTEDataset)
 print('📊 Final Metrics:', metrics)
 
 # === Model Inference ===
 print("\n🔮 Starting inference on test samples...")
 
-inference_model = ModelHub.load("ogb_te_3class_finetuned_epoch_50_seed_42_accuracy_score_0.9922_seed_42_f1_score_0.9922")
+inference_model = ModelHub.load("ogb_te_3class_finetuned_epoch_10_seed_42_accuracy_score_0.9812_seed_42_f1_score_0.9812")
 
 # Get some test samples
 # sample_sequences = datasets['test'].sample(1000).examples
