@@ -10,6 +10,8 @@
 
 import torch
 import math
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # 只让Python看到GPU 1
 
 from omnigenbench import (
     ClassificationMetric,
@@ -205,7 +207,8 @@ model = OmniModelForTriClassTESequenceClassification(
     tokenizer,
     num_labels=9,  # 9 tissues
     num_classes=3,  # 3 classes: Low, Medium, High
-    trust_remote_code=True
+    trust_remote_code=True,
+    # device="cuda:1"  # 添加这个参数
 )
 
 # Define metrics: accuracy and F1 score
@@ -219,12 +222,13 @@ trainer = AccelerateTrainer(
     model=model,
     epochs=10,
     learning_rate=2e-5,
-    batch_size=16,
+    batch_size=48,
     train_dataset=datasets["train"],
     eval_dataset=datasets["valid"],
     test_dataset=datasets["test"],
     compute_metrics=metric_functions,
     gradient_accumulation_steps=4,
+    # device="cuda:1"  # 添加这个参数
 )
 trainer.save_model(path_to_save="ogb_te_3class_finetuned", dataset_class=TriClassTEDataset)
 metrics = trainer.train(path_to_save="ogb_te_3class_finetuned", dataset_class=TriClassTEDataset)
@@ -233,7 +237,11 @@ print('📊 Final Metrics:', metrics)
 # === Model Inference ===
 print("\n🔮 Starting inference on test samples...")
 
-inference_model = ModelHub.load("ogb_te_3class_finetuned_epoch_10_seed_42_accuracy_score_0.9812_seed_42_f1_score_0.9812")
+# inference_model = ModelHub.load("ogb_te_3class_finetuned_epoch_2_seed_42_accuracy_score_0.4774_seed_42_f1_score_0.4745")
+inference_model = ModelHub.load(
+    "ogb_te_3class_finetuned_epoch_2_seed_42_accuracy_score_0.4774_seed_42_f1_score_0.4745",
+    # device="cuda:1"  # 或者 "cuda:1"，根据你想用哪个GPU
+)
 
 # Get some test samples
 # sample_sequences = datasets['test'].sample(1000).examples
