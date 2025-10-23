@@ -680,4 +680,5 @@ cython_debug/
 
 # Built Visual Studio Code Extensions
 *.vsix
-
+examples/9TE/ogb_te_3class_fine*
+examples/InstaDeepAI*
