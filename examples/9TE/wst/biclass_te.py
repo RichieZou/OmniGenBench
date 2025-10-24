@@ -30,7 +30,7 @@ from omnigenbench import (
 #---------------------------------------
 
 # 使用本地模型路径
-model_name_or_path = "/home/yz1033/OmniGenBench/models_cache"
+model_name_or_path = "/home/yz1033/OmniGenBench/models_cache/OmniGenome-52M"
 # 如果本地模型不存在，回退到在线下载
 if not os.path.exists(model_name_or_path) or not os.listdir(model_name_or_path):
     print("⚠️  本地模型不存在或为空，使用在线下载...")
