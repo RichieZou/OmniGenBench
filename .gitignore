@@ -681,3 +681,5 @@ cython_debug/
 # Built Visual Studio Code Extensions
 *.vsix
 
+examples/9TE/wst/ogb*
+models_cache/*
