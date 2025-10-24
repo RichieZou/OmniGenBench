@@ -683,4 +683,4 @@ cython_debug/
 examples/9TE/ogb_te_3class_fine*
 examples/InstaDeepAI*
 
-examples/9TE/dingling_data/*
+examples/9TE/dingling_data*
