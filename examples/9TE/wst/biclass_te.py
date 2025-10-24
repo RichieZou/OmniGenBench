@@ -10,6 +10,7 @@
 
 import torch
 import math
+import os
 
 from omnigenbench import (
     ClassificationMetric,
@@ -21,10 +22,28 @@ from omnigenbench import (
     OmniPooling,
 )
 
-model_name_or_path = "yangheng/OmniGenome-52M"
+#---------------------------------------
+# model_name_or_path = "yangheng/OmniGenome-52M"
 # model_name_or_path = "yangheng/OmniGenome-v1.5"
 # model_name_or_path = "SpliceBERT-510nt"
 # model_name_or_path = "InstaDeepAI/nucleotide-transformer-v2-100m-multi-species"
+#---------------------------------------
+
+# 使用本地模型路径
+model_name_or_path = "/home/yz1033/OmniGenBench/models_cache"
+# 如果本地模型不存在，回退到在线下载
+if not os.path.exists(model_name_or_path) or not os.listdir(model_name_or_path):
+    print("⚠️  本地模型不存在或为空，使用在线下载...")
+    model_name_or_path = "yangheng/OmniGenome-52M"
+else:
+    print(f"✅ 使用本地模型: {model_name_or_path}")
+    # 检查关键文件是否存在
+    required_files = ['config.json', 'tokenizer_config.json', 'vocab.txt']
+    missing_files = [f for f in required_files if not os.path.exists(os.path.join(model_name_or_path, f))]
+    if missing_files:
+        print(f"⚠️  缺少关键文件: {missing_files}")
+        print("🔄 回退到在线下载...")
+        model_name_or_path = "yangheng/OmniGenome-52M"
 
 # Load tokenizer
 tokenizer = OmniTokenizer.from_pretrained(model_name_or_path, trust_remote_code=True)
@@ -271,7 +290,7 @@ print('📊 Final Metrics:', metrics)
 # === Model Inference ===
 print("\n🔮 Starting inference on test samples...")
 
-inference_model = ModelHub.load("/home/sw1136/OmniGenBench/examples/dingling_te/ogb_te_3class_finetuned_epoch_19_seed_42_accuracy_score_0.9900_seed_42_f1_score_0.9900")
+inference_model = ModelHub.load("/home/yz1033/OmniGenBench/examples/9TE/wst/ogb_te_3class_finetuned_epoch_19_seed_42_accuracy_score_0.9900_seed_42_f1_score_0.9900")
 
 # Get some test samples
 # sample_sequences = datasets['test'].sample(1000).examples
