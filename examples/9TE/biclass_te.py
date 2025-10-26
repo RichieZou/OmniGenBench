@@ -7,9 +7,26 @@
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
 # Copyright (C) 2019-2025. All Rights Reserved.
-
+from datetime import datetime
+timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
 import torch
 import math
+import os
+
+# hp manage
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--epochs", type=int, default=10)
+parser.add_argument("--learning_rate", type=float, default=5e-5)
+parser.add_argument("--batch_size", type=int, default=24)
+parser.add_argument("--grad_accum", type=int, default=8)
+parser.add_argument("--base_dir", type=str, default="/data/yingjie/omni")
+parser.add_argument("--device", type=str, default="cuda:0", help="Device to use for training (e.g., 'cuda:0', 'cuda:1', 'cpu')")
+args = parser.parse_args()
+#-----
+
+
 
 from omnigenbench import (
     ClassificationMetric,
@@ -21,10 +38,28 @@ from omnigenbench import (
     OmniPooling,
 )
 
-model_name_or_path = "yangheng/OmniGenome-52M"
+#---------------------------------------
+# model_name_or_path = "yangheng/OmniGenome-52M"
 # model_name_or_path = "yangheng/OmniGenome-v1.5"
 # model_name_or_path = "SpliceBERT-510nt"
 # model_name_or_path = "InstaDeepAI/nucleotide-transformer-v2-100m-multi-species"
+#---------------------------------------
+
+# 使用本地模型路径
+model_name_or_path = "/home/yingjie/OmniGenBench/models_cache/OmniGenome-52M"
+# 如果本地模型不存在，回退到在线下载
+if not os.path.exists(model_name_or_path) or not os.listdir(model_name_or_path):
+    print("⚠️  本地模型不存在或为空，使用在线下载...")
+    model_name_or_path = "yangheng/OmniGenome-52M"
+else:
+    print(f"✅ 使用本地模型: {model_name_or_path}")
+    # 检查关键文件是否存在
+    required_files = ['config.json', 'tokenizer_config.json', 'vocab.txt']
+    missing_files = [f for f in required_files if not os.path.exists(os.path.join(model_name_or_path, f))]
+    if missing_files:
+        print(f"⚠️  缺少关键文件: {missing_files}")
+        print("🔄 回退到在线下载...")
+        model_name_or_path = "yangheng/OmniGenome-52M"
 
 # Load tokenizer
 tokenizer = OmniTokenizer.from_pretrained(model_name_or_path, trust_remote_code=True)
@@ -194,7 +229,7 @@ class OmniModelForBiClassTESequenceClassification(OmniModelForMultiLabelSequence
 print("📊 Loading datasets...")
 datasets = BiClassTEDataset.from_hub(
     # "examples/dingling_te_newlabel",  # 指定具体的数据目录
-    "examples/dingling_te_newlabel/preprocess_data_Tmean_04/split_ab_train_d",  # 使用A+B训练，D划分的数据
+    "/home/yingjie/OmniGenBench/examples/9TE",  # 使用A+B训练，D划分的数据
     tokenizer=tokenizer,
     max_length=512,
     force_padding=False
@@ -214,6 +249,11 @@ model = OmniModelForBiClassTESequenceClassification(
     num_classes=2,  # 2 classes: 0, 1
     trust_remote_code=True
 )
+
+# Move model to the specified device
+print(f"📱 Moving model to device: {args.device}")
+model.to(args.device)
+print(f"✅ Model is on device: {next(model.parameters()).device}")
 
 # Define metrics: accuracy and F1 score
 # - accuracy_score: 计算整体分类准确率，忽略标签为-100的样本（通常用于padding或无效标签）
@@ -255,68 +295,78 @@ metric_functions = [
 
 trainer = Trainer(
     model=model,
-    epochs=15,  # 增加epochs，因为学习率降低需要更多时间
-    learning_rate=5e-4,  # 🔑🔑 大幅降低学习率！从1e-4→5e-6 (降低20倍)
-    batch_size=16,  # 每次训练的样本数量
+    device=args.device,  # 指定训练设备
+    epochs=args.epochs,  # 增加epochs，因为学习率降低需要更多时间
+    learning_rate=args.learning_rate,  # 🔑🔑 大幅降低学习率！从1e-4→5e-6 (降低20倍)
+    batch_size=args.batch_size,  # 每次训练的样本数量
     train_dataset=datasets["train"],
     eval_dataset=datasets["valid"],
     test_dataset=datasets["test"],  # 仅用于训练后的最终测试，不影响训练过程
     compute_metrics=metric_functions,
-    gradient_accumulation_steps=4,
+    gradient_accumulation_steps=args.grad_accum,
 )
+base_dir = "/data/yingjie/omni"
+
+save_dir = os.path.join(
+    base_dir,
+    f"epoch{args.epochs}_lr{args.learning_rate:.0e}_bs{args.batch_size}_grad{args.grad_accum}_{timestamp}"
+)
+
+
+
 # trainer.save_model(path_to_save="ogb_te_3class_finetuned", dataset_class=BiClassTEDataset)
-metrics = trainer.train(path_to_save="ogb_te_2class_finetuned", dataset_class=BiClassTEDataset)
+metrics = trainer.train(path_to_save=save_dir, dataset_class=BiClassTEDataset)
 print('📊 Final Metrics:', metrics)
 
-# === Model Inference ===
-print("\n🔮 Starting inference on test samples...")
+# # === Model Inference ===
+# print("\n🔮 Starting inference on test samples...")
 
-inference_model = ModelHub.load("/home/sw1136/OmniGenBench/examples/dingling_te/ogb_te_3class_finetuned_epoch_19_seed_42_accuracy_score_0.9900_seed_42_f1_score_0.9900")
+# inference_model = ModelHub.load("/home/yz1033/OmniGenBench/examples/9TE/wst/ogb_te_3class_finetuned_epoch_19_seed_42_accuracy_score_0.9900_seed_42_f1_score_0.9900")
 
-# Get some test samples
-# sample_sequences = datasets['test'].sample(1000).examples
-#sample_sequences = datasets['valid'].sample(1000).examples
-sample_sequences = datasets['train'].examples[:1]
+# # Get some test samples
+# # sample_sequences = datasets['test'].sample(1000).examples
+# #sample_sequences = datasets['valid'].sample(1000).examples
+# sample_sequences = datasets['train'].examples[:1]
 
-label_names = ['0', '1']
-tissue_names = [
-    'root', 'seedling', 'leaf', 'FMI', 'FOD',
-    'Prophase-I-pollen', 'Tricellular-pollen', 'flag', 'grain'
-]
+# label_names = ['0', '1']
+# tissue_names = [
+#     'root', 'seedling', 'leaf', 'FMI', 'FOD',
+#     'Prophase-I-pollen', 'Tricellular-pollen', 'flag', 'grain'
+# ]
 
-with torch.no_grad():
-    for row in sample_sequences:
-        sequence = row["sequence"]
-        print(f"\n{'='*60}")
-        print(f"🧬 Sample ID: {row['ID']}")
-        print(f"📏 Sequence length: {len(sequence)} bp")
+# with torch.no_grad():
+#     for row in sample_sequences:
+#         sequence = row["sequence"]
+#         print(f"\n{'='*60}")
+#         print(f"🧬 Sample ID: {row['ID']}")
+#         print(f"📏 Sequence length: {len(sequence)} bp")
 
-        outputs = inference_model.inference(sequence, **row)
-        predictions = outputs['predictions'].cpu().numpy() # tensor([0, 2, 1, 2, 0, 2, 2, 1, 2], device='cuda:0') 9个tissue的预测类别
-        probabilities = outputs['probabilities'].cpu().numpy() # 9*3的tensor，每个tissue的3个类别的概率 （logits --> softmax）
-        confidence = outputs['confidence'].cpu().numpy() # 9个tissue的预测置信度 tensor([0.9990, 1.0000, 0.5112, 0.9834, 1.0000, 0.9985, 0.9990, 0.9995, 1.0000], probabilities中的最大值
-        # last_hidden_state = outputs['last_hidden_state'].cpu().numpy() # 9*512的tensor，每个tissue的512个token的隐藏状态
+#         outputs = inference_model.inference(sequence, **row)
+#         predictions = outputs['predictions'].cpu().numpy() # tensor([0, 2, 1, 2, 0, 2, 2, 1, 2], device='cuda:0') 9个tissue的预测类别
+#         probabilities = outputs['probabilities'].cpu().numpy() # 9*3的tensor，每个tissue的3个类别的概率 （logits --> softmax）
+#         confidence = outputs['confidence'].cpu().numpy() # 9个tissue的预测置信度 tensor([0.9990, 1.0000, 0.5112, 0.9834, 1.0000, 0.9985, 0.9990, 0.9995, 1.0000], probabilities中的最大值
+#         # last_hidden_state = outputs['last_hidden_state'].cpu().numpy() # 9*512的tensor，每个tissue的512个token的隐藏状态
 
 
-        print(f"\n📊 Predictions for 9 tissues:")
-        for i, tissue in enumerate(tissue_names):
-            pred_class = predictions[i]
-            pred_label = label_names[pred_class]
-            conf = confidence[i]
-            probs = probabilities[i]
+#         print(f"\n📊 Predictions for 9 tissues:")
+#         for i, tissue in enumerate(tissue_names):
+#             pred_class = predictions[i]
+#             pred_label = label_names[pred_class]
+#             conf = confidence[i]
+#             probs = probabilities[i]
 
-            # Get ground truth if available
-            gt_col = f"{tissue}_TE_label"
-            if gt_col in row:
-                gt_label = row[gt_col]
-                if isinstance(gt_label, float) and math.isnan(gt_label):
-                    continue
-                match_emoji = "✅" if pred_label == gt_label else "❌"
-                print(f"  {match_emoji} {tissue:25s}: {pred_label:6s} (conf: {conf:.3f}) [GT: {gt_label}]")
-            else:
-                print(f"  🔹 {tissue:25s}: {pred_label:6s} (conf: {conf:.3f})")
+#             # Get ground truth if available
+#             gt_col = f"{tissue}_TE_label"
+#             if gt_col in row:
+#                 gt_label = row[gt_col]
+#                 if isinstance(gt_label, float) and math.isnan(gt_label):
+#                     continue
+#                 match_emoji = "✅" if pred_label == gt_label else "❌"
+#                 print(f"  {match_emoji} {tissue:25s}: {pred_label:6s} (conf: {conf:.3f}) [GT: {gt_label}]")
+#             else:
+#                 print(f"  🔹 {tissue:25s}: {pred_label:6s} (conf: {conf:.3f})")
 
-            # Show probability distribution
-            print(f"      Probs - 0: {probs[0]:.3f}, 1: {probs[1]:.3f}")
+#             # Show probability distribution
+#             print(f"      Probs - 0: {probs[0]:.3f}, 1: {probs[1]:.3f}")
 
-print("\n🎉 All tasks completed!")
+# print("\n🎉 All tasks completed!")
