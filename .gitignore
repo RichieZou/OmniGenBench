@@ -685,3 +685,5 @@ cython_debug/
 examples/9TE/wst/ogb*
 models_cache/*
 examples/9TE/tri25102025/ogb_te_3cl*
+/home/yingjie/OmniGenBench/examples/9TE/splice2810/*
+/home/yingjie/OmniGenBench/examples/9TE/insta/*

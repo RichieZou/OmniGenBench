@@ -1,0 +1,17 @@
+{
+  "library_name": "omnigenbench",
+  "omnigenbench_version": "0.3.22alpha",
+  "torch_version": "2.8.0+cu128+cu12.8+gita1cb3cc05d46d198467bebbb6e8fba50a325d4e7",
+  "transformers_version": "4.57.0",
+  "model_cls": "OmniModelForStructureTERegression",
+  "dataset_cls": "StructureTERegressionDataset",
+  "dataset_module": "__main__",
+  "tokenizer_cls": "EsmTokenizer",
+  "model_name": "OmniModelForStructureTERegression",
+  "loss_fn_class": "MSELoss",
+  "loss_fn_module": "torch.nn.modules.loss",
+  "model_module": "__main__",
+  "custom_model_file": "custom_model.py",
+  "custom_dataset_file": "custom_dataset.py",
+  "custom_dataset_class": "StructureTERegressionDataset"
+}
