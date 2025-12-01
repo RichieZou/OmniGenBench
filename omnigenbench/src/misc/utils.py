@@ -5,7 +5,7 @@
 # github: https://github.com/yangheng95
 # huggingface: https://huggingface.co/yangheng
 # google scholar: https://scholar.google.com/citations?user=NPq5a_0AAAAJ&hl=en
-# Copyright (C) 2019-2024. All Rights Reserved.
+# Copyright (C) 2019-2025. All Rights Reserved.
 import multiprocessing
 import os
 import pickle
@@ -17,8 +17,9 @@ import warnings
 import ViennaRNA as RNA
 import findfile
 
-default_omnigenome_repo = (
-    "https://huggingface.co/spaces/yangheng/OmniGenomeLeaderboard/"
+# New unified HuggingFace Hub repository for all OmniGenBench resources
+default_omnigenbench_hub_repo = (
+    "https://huggingface.co/datasets/yangheng/OmniGenBench_Hub/"
 )
 
 
@@ -79,7 +80,7 @@ class RNA2StructureCache(dict):
         self.cache_file = (
             cache_file
             if cache_file is not None
-            else os.path.join(tempfile.gettempdir(), "rna_structure_cache.pkl")
+            else os.path.join(os.getcwd(), "rna_structure_cache.pkl")
         )
         self.queue_num = 0
 
@@ -204,14 +205,14 @@ class RNA2StructureCache(dict):
                     self.cache[seq] = self._fold_single_sequence(seq)
                     self.queue_num += 1
 
+            # Update cache file periodically
+            self.update_cache_file(self.cache_file)
+
         # Prepare output
         if return_mfe:
             structures = [self.cache[seq] for seq in sequences]
         else:
             structures = [self.cache[seq][0] for seq in sequences]
-
-        # Update cache file periodically
-        self.update_cache_file(self.cache_file)
 
         # Return single result or list
         if len(structures) == 1:
@@ -367,7 +368,7 @@ def print_args(config, logger=None):
 
 
 def fprint(*objects, sep=" ", end="\n", file=sys.stdout, flush=False):
-    """
+    r"""
     Enhanced print function with automatic flushing. It provides a print-like interface with automatic flushing
     to ensure output is displayed immediately. It's useful for real-time
     logging and progress tracking.
